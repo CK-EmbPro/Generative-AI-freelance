@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>i3solutions Generative AI</title>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+    crossorigin="anonymous"></script>
+    <!-- <script src="/lib/papaparse/papaparse.min.js"></script> -->
+    <script src="/js/utils.js"></script>
+    <style>
+        body {
+            overflow: auto;
+        }
+        .main_wrapper {
+            height: 100vh;
+            overflow-x: none !important;
+        }
+        .logoArea {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        .navbar-nav li {
+            padding-left:10px;
+            padding-right:10px;
+            color: white; 
+            display: inline-block;
+        }
+        .navbar-nav li a {
+            color: white;
+            text-decoration: none;
+            font-weight: normal;
+            font-family: Raleway, sans-serif;
+            display: inline-block;
+        }
+        .navbar-nav li:hover a {
+            color: orange;
+            text-decoration: underline;
+            font-weight: bold;
+            text-underline-offset: 5px;
+            text-decoration-thickness: 2px;
+        }
+        #loginButton {
+            background-color: #1b1b1b;
+        }
+        #userSection {
+            margin-top:15px;
+        }
+        #userSection a {
+            color: orange;
+        }
+        #userMessage {
+            color: white;
+        }
+        #logoutLink {
+            padding-left: 10px;
+        }
+        .card {
+            border-left-width: 0px;
+            border-right-width: 0px;
+            border-bottom-width: 0px;
+        }
+        h2 {
+            padding-left: 6px;
+            text-rendering: optimizeLegibility;
+            font-weight: 600;
+            border: 0px;
+        }
+        #div-mapview {
+            padding: 0;
+            margin: 0;
+            height: 90%;
+            width: 100%;
+            background-color: #1f2224;
+        }
+        #div-graphview {
+            padding: 0;
+            margin: 0;
+            height: 550px;
+            width: 550px;
+        }
+        .responseBox {
+            min-height: 50px;
+            max-height: 500px;
+            font-size: 10pt;
+        }
+        #form .row {
+            padding: 10px;
+        }
+        .form-check-input:checked {
+            background-color: orange;
+        }
+        #chatgpt-response {
+            overflow: auto;
+        }
+        .question {
+            padding-top: 20px;
+            padding-bottom: 20px;
+            padding: 15px;
+            font-size: 18px;
+            background-color: #F7F7F7; 
+        }
+        .answer { 
+            padding: 15px;
+            padding-top:20px;
+            padding-bottom: 20px;
+            font-size: 16px;
+            border-bottom: 1px solid #D9D9D9;
+            border-top: 1px solid #D9D9D9;
+            background-color: white;
+        }
+        
+        #questionType {
+            background-color: #f8f8f8;
+        }
+    
+        #question {
+            padding: 12px 20px;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            font-size: 16px;
+            resize: none;
+        }
+        
+        #button-ask {
+            position: absolute;
+            right: 5px;
+            top: 10px;
+            border: 0px;
+            background-color: rgb(248, 248, 248)
+        }
+    
+        #chkChatGPT, #chkFalcon7b {
+            margin-top: 17px;
+        }
+        
+        #chkChatGPT_label, #chkFalcon7b_label {
+            margin-top: 12px;
+        }
+    
+        #chatGPTthinking, #privateLLMthinking {
+            display: none;
+            margin-left: 20px;
+        }
+        #left {
+            width: 100%;
+            }
+    </style>
+</head>
+<body> 
+    <div class="main_wrapper">
+    <!-- Modal -->
+    <div class="modal modal-sm fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel" aria-hidden="true" stye>
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loginModalLabel">Login</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <!--<label for="username">Username</label>-->
+                            <input type="text" class="form-control" id="username" aria-describedby="" placeholder="Enter username"><br/>
+                          </div>
+                          <div class="form-group">
+                            <!--<label for="password">Password</label>-->
+                            <input type="password" class="form-control" id="password" placeholder="Password">
+                          </div>
+                          
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="loginButton" class="btn btn-primary">Login</button>
+                </div>
+                <div class="row">
+                    <a class="form-check-label" href="mailto:aski3@i3solutions.com" style="margin:10px;">Request Access</a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    <div class="modal modal-lg fade" id="mapModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true" stye>
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mapModalLabel">Map</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="$('#mapModal').modal('hide')">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body" style="height:650px;">
+                        <div id="div-mapview"></div>
+                        <div class="row" style="margin-top:25px;">
+                            <div class="col-12" style="text-align:center;">
+                                <input type="button" value="Clear Map" id="btn-clear-map"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END Modal -->
+    <div class="row" style="background-color: rgb(0,0,0,0.9)">
+        <div class="col-2">
+            <div class="row">
+                 <div id="logo" class="col-3 logoArea">
+                    <img width="132" height="40" float="Left" style="margin:5px;" src="https://i0.wp.com/i3solutions.com/wp-content/uploads/2019/01/i3logoSS.png?fit=132%2C40&amp;ssl=1&amp;is-pending-load=1" class="vc_single_image-img attachment-full jetpack-lazy-image jetpack-lazy-image--handled lazyloaded" alt="i3solutions logo" decoding="async" title="i3solutions logo | i3solutions: a software development company" loading="eager" data-ll-status="loaded" data-lazy-loaded="1">
+                </div>
+            </div>
+        </div>
+        <div class="col-8">
+            <div class="row">
+                <!--
+                <div class="col-3 logoArea">
+                    <img width="132" height="40" src="https://i0.wp.com/i3solutions.com/wp-content/uploads/2019/01/i3logoSS.png?fit=132%2C40&amp;ssl=1&amp;is-pending-load=1" class="vc_single_image-img attachment-full jetpack-lazy-image jetpack-lazy-image--handled lazyloaded" alt="i3solutions logo" decoding="async" title="i3solutions logo | i3solutions: a software development company" loading="eager" data-ll-status="loaded" data-lazy-loaded="1">
+                </div>
+            -->
+                <div class="col-9">
+                    <nav class="navbar navbar-expand-lg">
+                        <div class="collapse navbar-collapse" id="navbarNav">
+                          <ul class="navbar-nav">
+                            <li class="nav-item active">
+                                <a class="nav-link" href="#">HOME <span class="sr-only">(current)</span></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="https://i3solutions.com/#contact-us">ABOUT</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">GENERATIVE AI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="https://i3solutions.com/blog/">BLOGS</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="https://i3solutions.com/#contact-us">CONTACT</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">SETTINGS</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">HELP</a>
+                            </li>
+                          </ul>
+                        </div>
+                      </nav>
+                </div>
+            </div>
+        </div>
+        <div class="col-2">
+            <div id="userSection" style="display:none;">
+                <span id="userMessage"></span>
+                <a href="#" id="logoutLink">Logout</a>
+            </div>
+        </div>
+    </div>
+
+
+    <div style="height:100%">
+        <div>
+            <div class="row">
+               
+                <div class="h2" id="page_title" style="margin-left:10px;margin-top:10px;">
+                    Private Generative AI Knowledge Bases
+                </div> 
+                
+                <div class="col-6"><span id="span-coords" class="float-end"></span></div>
+            </div>
+        </div>
+        <div>
+            <div class="row">
+                <div class="col-12">
+                    <div>
+                        <form id="form">
+                            <div class="row responseBox" id="chatgpt-response">
+                            </div>
+                            <div class="row">
+                                <div class="col-12">        
+                                    <div class="input-group" style="position:relative; display:inline-block;">
+                                        <textarea id="question" rows="5" style="width:100%" placeholder="Ask a question here. Select your search options and Knowledge Base below."></textarea>
+                                        <div class="input-group-append">
+                                            <button id="button-ask" type="submit">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-send" viewBox="0 0 16 16">
+                                                    <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <span class="form-check-label"><b>Search Options:</b></span><br>
+                                <div class="col-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="chkFalcon7b" checked>
+                                        <label class="form-check-label" for="chkFalcon7b" id="chkFalcon7b_label">
+                                            Private-GPT (Select from your KBs below)
+                                        </label>
+
+                                        <span id="privateLLMthinking">
+                                            <i class="fa-solid fa-robot"></i>
+                                            <div class="spinner-grow spinner-grow-sm" role="status"></div>
+                                            <div class="spinner-grow spinner-grow-md" role="status"></div>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <select class="form-control" aria-label="Default select example" id="privateKBSelect" style="width:auto;">
+                                            <option value="" selected>General Knowledge</option>
+                                            <option value="china">China</option>
+                                            <option value="cia_factbook">CIA Factbook</option>
+                                            <option value="climate">Climate</option>
+                                            <option value="cdcs">Country Development Cooperation Strategy</option>
+                                            <option value="doctrine">Doctrine</option>
+                                            <option value="futureglobalcompetition">Future Global Competition</option>
+                                            <option value="geopolitics">Geopolitics</option>
+                                            <option value="grayzone">Gray Zone</option>
+                                            <option value="ics">Integrated Country Strategy</option>
+                                            <option value="middleeast">Middle East</option>
+                                            <option value="minsky">Minsky</option>
+                                            <option value="russia">Russia</option>
+                                            <option value="stability">Stability</option>
+                                            <option value="sma">Strategic Multilayer Assessments</option>
+                                            <option value="terrorism">Terrorism</option>
+                                            <option disabled="disabled">----------</option>
+                                            <option value="benefitslaw">Benefits Law</option>
+                                            <option value="ebsa">EBSA / DOL Docs</option>
+                                            <option value="healthcare">Statutes re Health Plans</option>
+                                            <option disabled="disabled">----------</option>
+                                            <option value="medsurg">Med/Surg Textbook</option>
+                                            <option value="bbe">BBE</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="chkChatGPT" checked>
+                                        <label class="form-check-label" for="chkChatGPT" id="chkChatGPT_label">
+                                            Chat-GPT (Public)
+                                        </label>
+
+                                        <span id="chatGPTthinking">
+                                            <i class="fa-solid fa-robot"></i>
+                                            <div class="spinner-grow spinner-grow-sm" role="status"></div>
+                                            <div class="spinner-grow spinner-grow-md" role="status"></div>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <label for="questionType" class="form-label">Select Answer Type</label>
+                                    <select id="questionType" class="form-control" style="width:auto;">
+                                        <option value="">Select one</option>
+                                        <option value="1">Question-Answer</option>
+                                        <option value="2">Show on Map</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <span class="form-check-label">Administration:</span><br>
+                                    <ul>
+                                        <li><a class="form-check-label"href="mailto:aski3@i3solutions.com">Request new private knowledge base</a></li>
+                    
+                                    <li><a class="form-check-label" href="mailto:aski3@i3solutions.com">Add a new user</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <span onclick="toggleAdmin()">.</span>
+            <div id="adminSection" style="display:none;"></div>
+        </div>
+        <div>
+            <br><br><br><br><br>
+            <a href="#" onclick="displayName()">.</a>
+                    <script>
+                        function displayName() {
+                            document.getElementById("question").innerHTML = "What is the capital of Turkey?"
+                        }
+                    </script>
+            <div id="testQuestionSection" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div class="small-12" style="background-color:#1b1b1b;">
+        <div class="row" style="padding:40px;">
+            <div class="col-2"></div>
+            <div class="col-4" style="color:rgb(114, 114, 114);font-family:Open Sans; font-size:11.9px;">
+                <p>Copyright i3solutions. All Rights Reserved.<br>
+                Email <a href="mailto:aski3@i3solutions.com" style="color:rgb(230, 126, 34)">aski3@i3solutions.com</a> - Phone 703.652.8966</p>
+            </div>
+            <div class="col-4" style="text-align:right;">
+                <img width="132" height="40" src="https://i0.wp.com/i3solutions.com/wp-content/uploads/2019/01/i3logoSS.png?fit=132%2C40&amp;ssl=1&amp;is-pending-load=1" class="vc_single_image-img attachment-full jetpack-lazy-image jetpack-lazy-image--handled lazyloaded" alt="i3solutions logo" decoding="async" title="i3solutions logo | i3solutions: a software development company" loading="eager" data-ll-status="loaded" data-lazy-loaded="1">
+            </div>
+            <div class="col-2"></div>
+        </div>
+    </div>
+
+
+<script src="https://unpkg.com/neovis.js@2.0.2"></script>
+<script src="/js/neovisutils.js"></script>
+<script src="https://js.arcgis.com/4.26/"></script>
+<script src="/js/arcgisutils.js"></script>
+<script>
+var apiCalls = 0;
+var loginUser = '';
+var loginToken = '';
+const loading = (isLoading) => {
+        $('.loading-show').toggle(isLoading);
+        $('.loading-hide').toggle(!isLoading);
+        $('.loading-disable').attr('disabled', isLoading);
+    }
+
+var map, view, graphicsLayer;
+require(["esri/config", "esri/Map", "esri/views/MapView","esri/views/SceneView","esri/Graphic", "esri/layers/GraphicsLayer"], 
+function(esriConfig, Map, MapView,SceneView,Graphic,GraphicsLayer) {
+    $('#loginModal').modal('show');
+
+    esriConfig.apiKey = "AAPK17a868beeabf4ce68552f11cfc9bdd9eqVs-MrYe15ctk4npZTL_1jAZ3HarREMvOIBvDYDMXJZAgYcEqkBlCYtEiyGoCC_q";
+
+    map = new Map({
+        basemap: "hybrid",
+        ground: "world-elevation" //elevation service
+    });
+    view = new SceneView({
+        map: map,
+        //center: [-66.47954925, 18.22422192], // PR Longitude, latitude
+        center: [110.3251,10.3510],
+        zoom: 4, // Zoom level
+        container: "div-mapview" // Div element
+    });
+
+    view.on('pointer-move',(ev)=>{
+        const sc = {type:'screen-point',x:ev.x,y:ev.y};
+        const mapPoint = view.toMap(sc);
+        //console.debug(mapPoint.longitude, mapPoint.latitude);
+        if(mapPoint){
+            const x = Math.round(mapPoint.longitude * 1000)/1000;
+            const y = Math.round(mapPoint.latitude * 1000)/1000;
+            $('#span-coords').text(`${x},${y},${Math.round(view.camera.tilt)},${Math.round(view.zoom)}`);
+        }else{
+            $('#span-coords').text('...');
+        }
+        //console.debug(ev.x,ev.y);
+    });
+    view.on('pointer-leave',(ev)=>{
+        $('#span-coords').empty();
+    })
+    graphicsLayer = new GraphicsLayer();
+    map.add(graphicsLayer);
+
+    $('#questionType>option:eq(1)').prop('selected', true);
+
+    //doMemoryCheck();
+    //doHeartBeat();
+
+    $('#questionType').change((evt) => {
+        var selectedIdx = $(evt.target).val();
+        if (selectedIdx == 2) {
+            $('#chkFalcon7b').prop('checked', false);
+            $('#chkChatGPT').prop('checked', true);
+            $('#chkFalcon7b').prop('disabled', true);
+            $('#privateKBSelect').prop('disabled', true);
+        } else {
+            $('#chkFalcon7b').prop('disabled', false);
+            $('#privateKBSelect').prop('disabled', false);
+        }
+    });
+});
+
+$('#btn-clear-map').on('click', (ev) => graphicsLayer.removeAll());
+
+function toggleAdmin() {
+    $('#adminSection').toggle();
+}
+
+function doMemoryCheck() {
+    $.ajax({
+            url: '/memcheck',
+            type: 'GET',
+            contentType: 'application/json',
+            success: handleMemCheckInfo
+        });
+
+    setTimeout(() => { doMemoryCheck(); }, 5000)
+}
+
+function doHeartBeat() {
+    var loginInfo = {
+        user: loginUser
+    }
+    console.log(loginInfo);
+    $.ajax({
+        url: '/heartbeat',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(loginInfo),
+        dataType: 'json',
+        success: null
+    });
+
+    setTimeout(() => { doHeartBeat(); }, 30000)
+}
+
+function handleMemCheckInfo(data) {
+    console.log(data);
+    $('#adminSection').html(data.usage.toFixed(2) + "% used");
+}
+
+function submitForm(ev) {
+    if (loginToken.length == 0) {
+        $('#loginModal').modal('show');
+        return;
+    }
+
+    if (ev != null) {
+        ev.preventDefault();
+    }
+
+    var type = $('#questionType').val();
+    const chatGPTQuestion = {
+        type: type,
+    }
+    if (type == 1) {
+        if ($('#question').val().trim() == "") {
+            return;
+        }
+        chatGPTQuestion['question'] = $('#question').val();
+        setTimeout(() => { $('#question').val(''); }, 250);
+        appendToConversation('Q) ' + chatGPTQuestion.question, 'question');
+    }
+    if (type == 2) {
+        if ($('#question').val().trim() == "") {
+            return;
+        }
+        chatGPTQuestion['question'] = $('#question').val();
+        setTimeout(() => { $('#question').val(''); }, 250);
+        appendToConversation('Q) Draw points for this ' + chatGPTQuestion.question + ' on the map.', 'question');
+    }
+    console.log(chatGPTQuestion);
+    chatGPTQuestion['user'] = loginUser;
+    chatGPTQuestion['token'] = loginToken;
+    askingAQuestion(true);
+
+    if ($('#chkChatGPT').is(':checked')) {
+        apiCalls = apiCalls + 1;
+        $('#chatGPTthinking').show();
+        $.ajax({
+            url: '/generate',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(chatGPTQuestion),
+            dataType: 'json',
+            success: handleChatGPTResult
+        });
+    }
+    
+    if ($('#chkFalcon7b').is(':checked')) {
+        var type = $('#questionType').val();
+
+        if (type == 1) {
+            var useQA = $('#privateKBSelect').val();
+            console.log('useQA');
+            console.log('--' + useQA + '--');
+
+            var url = '';
+            var data = null;
+            if (useQA == '') {
+                //url = "http://192.168.1.251:8000/generate";
+                url = "/privgenerate";
+                data = JSON.stringify({ 
+                    question: chatGPTQuestion.question,
+                    user: loginUser,
+                    token: loginToken
+                });
+            } else {
+                url = "/privQA";
+                data = JSON.stringify({
+                    kb: useQA,
+                    question: chatGPTQuestion.question,
+                    user: loginUser,
+                    token: loginToken                    
+                });
+            }
+
+            apiCalls = apiCalls + 1;
+            $('#privateLLMthinking').show();
+            console.log('url');
+            console.log(url);
+            console.log(data);
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: data,
+                dataType: 'json',
+                success: handlePrivateLLMResult
+            });
+        }
+
+        if (type == 2) {
+            var url = "http://chatgpt.i3solutions.ai:8000/generate";
+
+            apiCalls = apiCalls + 1;
+            $('#privateLLMthinking').show();
+            var privateLLMPointsPrompt = `give me a list of ${chatGPTQuestion.question}.
+                provide the list of ${chatGPTQuestion.question} in json notation as an array of objects using the following format as follows:
+                { "name": "sea port", "details": "additional information", "location": [latitude, longitude]}`
+            var data = JSON.stringify({ prompt: privateLLMPointsPrompt });
+            console.log(data);
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: data,
+                dataType: 'json',
+                success: handlePrivateLLMMapResult
+            });
+        }
+    }
+}
+
+$('#password').keypress(
+    function(e){
+        if (e.keyCode == 13) {
+            doLogin();
+        }
+});
+
+
+$("#loginButton").click(function(ev) {
+    doLogin();
+})
+
+function doLogin() {
+    var loginInfo = {
+        user: $('#username').val(),
+        pass: $('#password').val()
+    }
+    console.log(loginInfo);
+    $.ajax({
+        url: '/login',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(loginInfo),
+        dataType: 'json',
+        success: handleLoginResult
+    });
+}
+
+$('#logoutLink').click(function (ev) {
+    document.location.reload();
+});
+
+function camelCase(str) {
+  return str.split(' ').map(word => word[0].toUpperCase() + word.slice(1)).join('');
+}
+
+function handleLoginResult(data) {
+    console.log('result');
+    console.log(data);
+
+    if (data.error.length > 0) {
+        $('#username').val('');
+        $('#password').val('');
+        alert(data.error);
+    } else {
+        loginUser = data.user;
+        loginToken = data.token;
+        $('#page_title').html(data.title);
+        $('#loginModal').modal('hide');
+        kbs = data.kbs;
+
+        var options = $('#privateKBSelect option');
+        for (var i = 0; i < options.length; i++) {
+            var option = $(options[i]);
+            if (option.val().length > 0) {
+                var idx = kbs.indexOf(option.val());
+                if (idx == -1) {
+                    option.remove();
+                }
+            }
+        }
+
+        $('#userSection').show();
+        var userNameParts = loginUser.split('.');
+        var usersName = camelCase(userNameParts[0]) + ' ' + camelCase(userNameParts[1]);
+        $('#userMessage').html(usersName);
+    }
+}
+
+$("#form").submit(function(ev){
+    submitForm(ev);
+});
+
+function handleChatGPTResult(data) {
+    apiCalls = apiCalls - 1;
+    if (apiCalls == 0) { askingAQuestion(false); }
+    $('#chatGPTthinking').hide();
+    
+    if (data.questionType == '1') {
+        if (data.result.indexOf('1. ') > -1) {
+            var searchRE = /\n/g
+            data.result = data.result.trim().replace(searchRE, '<br/>');
+        }
+        appendToConversation('Chat-GPT) ' + data.result, 'answer');
+    }
+
+    if (data.questionType == '2') {
+        console.log('chat gpt type 2 result');
+        console.log(data.result);
+        require(["esri/config", "esri/Map", "esri/views/MapView","esri/views/SceneView","esri/Graphic", "esri/layers/GraphicsLayer"], 
+        function(esriConfig, Map, MapView,SceneView,Graphic,GraphicsLayer, Polyline) {
+            try {
+                //data.result = data.result.replace(/name:/g, '"name":').replace(/location:/g, '"location":');
+                const items = JSON.parse(data.result);
+                console.log(items);
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i]
+                    if (item.location.latitude > item.location.longitude) {
+                        var temp = item.location.latitude;
+                        item.location.latitude = item.location.longitude;
+                        item.location.longitude = temp;
+                    }
+                }
+                drawSeveralPoints(items);
+                appendToConversation('Chat-GPT) The items have been drawn.<br/><a href="#" onclick="$(\'#mapModal\').modal(\'show\')">Map</a>', 'answer');
+            } catch {
+                const items = JSON.parse(partialParse(data.result));
+                console.log(items);
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i]
+                    if (item.location.latitude > item.location.longitude) {
+                        var temp = item.location.latitude;
+                        item.location.latitude = item.location.longitude;
+                        item.location.longitude = temp;
+                    }
+                }
+                drawSeveralPoints(items);
+                appendToConversation('Chat-GPT) The items have been drawn.<br/><a href="#" onclick="$(\'#mapModal\').modal(\'show\')">Map</a>', 'answer');
+            }
+        });
+    }
+}
+
+function handlePrivateLLMResult(data) {
+    apiCalls = apiCalls - 1;
+    if (apiCalls == 0) { askingAQuestion(false); }
+    $('#privateLLMthinking').hide();
+
+    if (data.response.indexOf('1. ') > -1) {
+        var searchRE = /\n/g
+        data.response = data.response.replace(searchRE, '<br/>');
+    }
+    
+    if (data.response.substring(0, 2) == ': ') {
+        data.response = data.response.substring(2, data.response.length);
+    }
+
+    var sources = [];
+    var kb = '';
+    if (data.hasOwnProperty('sources')) {
+        sources = data.sources;
+        kb = data.kb;
+    }
+
+    appendToConversation('Private-GPT) ' + data.response, 'answer', sources, kb);
+
+    evaluateMemoryUsage();
+}
+
+function evaluateMemoryUsage() {
+    $.ajax({
+        url: '/memcheck',
+        type: 'GET',
+        contentType: 'application/json',
+        success: (resp) => {
+            if (resp.usage > 70) {
+                $.ajax({
+                    url: '/memfree',
+                    type: 'GET',
+                    contentType: 'application/json',
+                    success: (data) => {
+                        // Memory should be released
+                    }
+                });
+            }
+        }
+    });
+}
+
+function getRidOfNonJSON(dirty) {
+    var idxLeft = dirty.indexOf('[');
+    var idxRight = dirty.lastIndexOf(']');
+    if (idxLeft > -1 && idxRight > -1) {
+        var pass1 = dirty.substring(idxLeft);
+        idxRight = pass1.lastIndexOf(']');
+        var pass2 = pass1.substring(0, idxRight+1);
+        return pass2;
+    } else {
+        return dirty;
+    }
+}
+
+function partialParse(dirty) {
+    var idxLeft = dirty.indexOf('[');
+    var idxRight = dirty.lastIndexOf('}');
+    if (idxLeft > -1 && idxRight > -1) {
+        var pass1 = dirty.substring(idxLeft);
+        idxRight = pass1.lastIndexOf('}');
+        var pass2 = pass1.substring(0, idxRight+1);
+        return pass2 + ']';
+    } else {
+        return dirty;
+    }
+}
+function swapLocationXY(items) {
+    for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var newLong = item.location[1];
+        var newLat = item.location[0];
+        item.location[1] = newLat;
+        item.location[0] = newLong;
+    }
+    return items;
+}
+
+function handlePrivateLLMMapResult(data) {
+    apiCalls = apiCalls - 1;
+    if (apiCalls == 0) { askingAQuestion(false); }
+    $('#privateLLMthinking').hide();
+    console.log(data.response);
+    jsonFromResponse = getRidOfNonJSON(data.response);
+    require(["esri/config", "esri/Map", "esri/views/MapView","esri/views/SceneView","esri/Graphic", "esri/layers/GraphicsLayer"], 
+    function(esriConfig, Map, MapView,SceneView,Graphic,GraphicsLayer, Polyline) {
+        try {
+            //data.result = data.result.replace(/name:/g, '"name":').replace(/location:/g, '"location":');
+            console.log('first area');
+            console.log(jsonFromResponse);
+            var items = JSON.parse(jsonFromResponse);
+            items = swapLocationXY(items);
+            console.log(items);
+            drawSeveralPoints(items);
+            appendToConversation('Private-GPT) The items have been drawn.', 'answer');
+        } catch {
+            jsonFromResponse = partialParse(data.response);
+            console.log('second area');
+            console.log(jsonFromResponse);
+            var items = JSON.parse(jsonFromResponse);
+            items = swapLocationXY(items);
+            console.log(items);
+            drawSeveralPoints(items);
+            appendToConversation('Private-GPT) The items have been drawn.', 'answer');
+        }
+    });
+}
+
+function drawSeveralPoints(items) {
+    items.forEach(item => {
+        const pointPopup = {
+            title: item.name,
+            content: item.details,
+        }
+        drawPoint(graphicsLayer,item.location[0],item.location[1],pointPopup);
+    });
+}
+
+$("#chkFalcon7b").change(function() {
+    if(this.checked) {
+        $('.chatgpt-typerow-1b').show();
+    } else {
+        $('.chatgpt-typerow-1b').hide();
+    }
+});
+
+$('#question').keypress(
+    function(e){
+        if (e.keyCode == 13) {
+            submitForm(null);
+        }
+    });
+
+function askingAQuestion(amAsking) {
+    $('#chatgpt-button-clear').prop("disabled",amAsking);
+    $('#chatgpt-button-ask').prop("disabled",amAsking);
+}
+
+function cleanSource(dirtySource) {
+    var idx = dirtySource.lastIndexOf('\\');
+    if (idx > -1) {
+        return dirtySource.substring(idx+1);
+    } else {
+        return dirtySource;
+    }
+}
+
+function appendToConversation(message, type, sources, kb) {
+    var iconType = "";
+    var iconColor = "";
+    var robot_type = "";
+    var askAgain = "";
+    if (message.indexOf('Q)') > -1) {
+        message = message.replace('Q) ', '').replace('Chat-GPT) ', '').replace('Private GPT) ' , '');
+        iconType = "face-smile";
+        iconColor = "#0049AC";
+        askAgain = '    <a href="#" onclick="javascript:$(\'#question\').val(\'' + message + '\');">(Ask again)</a>';
+    } else {
+        iconType = "robot";
+        iconColor = "#FB1515";
+        if (message.indexOf("Chat-GPT)") > -1) {
+            robot_type = "Chat-GPT"
+        } else {
+            robot_type = "Private-GPT"
+        }
+    }
+
+    message = message.replace('Q) ', '').replace('Chat-GPT) ', '').replace('Private-GPT) ' , '');
+    if (message.substring(0, 2) == ': ') {
+        message = message.subtstr(2, message.length);
+    }
+    //if ($('#chatgpt-response').text().indexOf('Q)') == -1) {
+    if ($('#chatgpt-response').text().length < 10) {
+        let newMessage = '<div class="row ' + type + '"><div class="col-1" style="text-align:center;"><i style="margin-top:20px; color: ' + iconColor + ';" class="fa-solid fa-' + iconType + ' fa-2xl"></i><br/><br/>' + robot_type + '</div><div class="col-11">' + message + askAgain + '</div></div>';
+        $('#chatgpt-response').html(newMessage);
+    } else {
+        let newMessage = '';
+        let increasingNumber = $('#chatgpt-response').text().length;
+        if (typeof sources != 'undefined') {
+            var options = $('option');
+            for (var i = 0; i < options.length; i++) {
+                var option = $(options[i]);
+                if (option.prop('value') == kb && !option.prop('disabled')) {
+                    kb = option.text();
+                }
+            }
+
+            newMessage = '<br/><div class="row ' + type + '"><div class="col-1" style="text-align:center; color: ' + iconColor + ';"><i style="margin-top:20px;" class="fa-solid fa-' + iconType + ' fa-2xl"></i><br/><br/>' + robot_type + '</div><div class="col-11">' + message + askAgain;
+            newMessage += '<br/><br/>From KB: ' + kb + '<br/>';
+            for (var i = 0; i < sources.length; i++) {
+                var source = sources[i];
+                newMessage += `<a href="#" onclick="$('#exampleModal${increasingNumber}${(i+1)}').modal('show');">Source ${(i+1)}</a>&nbsp;&nbsp;&nbsp;
+                                <div class="modal fade" id="exampleModal${increasingNumber}${(i+1)}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="exampleModalLabel">${cleanSource(source.metadata.source)} - Page: ${source.metadata.page}</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="$('#exampleModal${increasingNumber}${(i+1)}').modal('hide');">
+                                                <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                ${source.page_content}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                `;
+            }
+
+            newMessage += '</div></div>';
+        } else {
+            newMessage = '<br/><div class="row ' + type + '"><div class="col-1" style="text-align:center; color: ' + iconColor + ';"><i style="margin-top:20px;" class="fa-solid fa-' + iconType + ' fa-2xl"></i><br/><br/>' + robot_type + '</div><div class="col-11">' + message + askAgain + '</div></div>';
+        }
+        $('#chatgpt-response').html($('#chatgpt-response').html() + newMessage);
+    }
+    $('#chatgpt-response').prop('scrollTop', $('#chatgpt-response').prop('scrollHeight'));
+    $('#exampleModal1').modal();
+}
+
+$('#mapToggle').click(function () {
+    $('.card-body').toggle();
+})
+//ISAAC Generative AI
+</script>
+</div>
+
+</body>
+</html>
